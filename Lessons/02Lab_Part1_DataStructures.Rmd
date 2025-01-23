@@ -39,10 +39,10 @@ vector1 <- c(1,2,5.3,6,-2,4) # Vector type: Numeric
 vector1
 class(vector1)
 
-vector2 <- c("one","two","three") # Vector type: 
+vector2 <- c("one","two","three") # Vector type: Characters
 vector2
 
-vector3 <- c(TRUE,TRUE,TRUE,FALSE,TRUE,FALSE) # Vector type:
+vector3 <- c(TRUE,TRUE,TRUE,FALSE,TRUE,FALSE) # Vector type: Logic
 vector3
 ```
 
@@ -83,17 +83,19 @@ Find a 5-day forecast of temperatures (Fahrenheit) for Durham, North Carolina. C
 ```{r Vector Exercise}
 
 #Assign to the variable 'temps_F' a vector of high temperatures in F
-
+temps_F <- c(43,47,53,54,60)
+temps_F
 
 #What is the average of these temperatures 
-
+average <- mean(temps_F)
+average
 
 #Compute the difference between each temperature and the average calculated above
-
+temps_F - average
 
 #Subtract 32 and multiply by 5/9ths to create a vector in Celsius
-
-
+tempC <- (temps_F-32)*5/9
+tempC
 ```
 
 ## Matrices
@@ -103,11 +105,11 @@ Complete the comments below:
 # Matrices ----
 matrix1 <- matrix(1:20, nrow = 5,ncol = 4) # 
 matrix1
-#matrix1 has __ rows and __ columns
+#matrix1 has 05 rows and 04 columns
 
 matrix2 <- matrix(1:20, nrow = 5, ncol = 4, byrow = TRUE) #
 matrix2
-#matrix2 has __ rows and __ columns
+#matrix2 has 05 rows and 04 columns
 
 matrix3 <- matrix(
   data = 1:20, 
@@ -119,7 +121,7 @@ matrix3 <- matrix(
     c("un", "deux", "trois", "quatre")
     )
   ) 
-
+matrix3
 ```
 
 ### Matrix Operations
@@ -163,7 +165,7 @@ matrix4['R2','C1']
 ### Exercise 1b: Matrices
 Compute the mean of column "C2" in matrix4. (Should be 14.5)
 ```{r Matrix Exercise}
-
+mean(matrix4[,"C2"])
 ```
 
 
@@ -210,15 +212,15 @@ list1[[4]] = 44
 ```{r Creating data frames}
 # Data Frames ----
 #Create three vectors of equal length
-d <- c(1, 2, 3, 4) # What type of vector?
-e <- c("red", "white", "red", NA) # What type of vector?
-f <- c(TRUE, TRUE, TRUE, FALSE) # What type of vector?
+d <- c(1, 2, 3, 4) # What type of vector? Number
+e <- c("red", "white", "red", NA) # What type of vector? Characters
+f <- c(TRUE, TRUE, TRUE, FALSE) # What type of vector? Logic
 
 #Combine the vectors into a dataframe
 dataframe1 <- data.frame(d,e,f) 
 
 #Set the column names & View
-names(dataframe1) <- c("ID","Color","Passed"); View(dataframe1) # 
+names(dataframe1) <- c("ID","Color","Passed"); View(dataframe1) # to hash View command before knitting  
 
 #Add a new column to the dataframe
 dataframe1$month <- c('Jan','Feb', 'Mar', 'Apr')
