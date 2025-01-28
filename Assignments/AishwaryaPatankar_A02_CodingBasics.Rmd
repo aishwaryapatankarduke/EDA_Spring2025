@@ -79,7 +79,7 @@ student_status <- data.frame(student_names,test_scores,scholarship)
 
 #8
 #Naming the dataframe coloumns with a title
-names(student_status) <- c("Name","Score", "Scholarship"); View(student_status)
+#names(student_status) <- c("Name","Score", "Scholarship"); View(student_status) # This command has been hashed before knitting
 
 
 ```
