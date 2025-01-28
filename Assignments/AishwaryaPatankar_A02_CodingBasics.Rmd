@@ -123,7 +123,9 @@ ifelseresult12b
  # print("Pass")
 #} else {
  # print("Fail")
-}
+#}
+# This function has been commented out since it does not work
+
 #13b. Run the second function with the vector of test scores
 ifelseresult13b <- ifelse(test_scores > 50, "Pass", "Fail")
 ifelseresult13b
