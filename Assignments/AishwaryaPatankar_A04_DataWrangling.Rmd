@@ -109,10 +109,10 @@ class(PM2018$Date)
 class(PM2019$Date)
 
 #4 Selecting Columns
-Ozone2018filtered <- select(Ozone2018,Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
-Ozone2019filtered <- select(Ozone2019,Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
-PM2018filtered <- select(PM2018,Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
-PM2019filtered <- select(PM2019,Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
+Ozone2018filtered <- select(Ozone2018,Date, DAILY_AQI_VALUE, Site.Name,AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
+Ozone2019filtered <- select(Ozone2019,Date, DAILY_AQI_VALUE, Site.Name,AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
+PM2018filtered <- select(PM2018,Date, DAILY_AQI_VALUE, Site.Name,AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
+PM2019filtered <- select(PM2019,Date, DAILY_AQI_VALUE, Site.Name,AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
 
 #5 Making cells in the PM sheets column AQS_PARAMETER_DESC to "PM2.5 
 PM2018filtered$AQS_PARAMETER_DESC <- "PM2.5"
@@ -160,19 +160,45 @@ write.csv(PM2019filtered, file = "/Users/aishwaryapatankar/Documents/Duke Univer
 
 ```{r questions 7 thru 11}
 #7 
+#Confirming Column Names are Same
+colnames(Ozone2018filtered)
+colnames(Ozone2019filtered)
+colnames(PM2018filtered)
+colnames(PM2019filtered)
+#Joining dataframes using rbind
+AirQualityDataJoined <- rbind(Ozone2018filtered, Ozone2019filtered, PM2018filtered, PM2019filtered)
 
-
-#8 
+#8 Using the pipe command for filtering sites, grouping, 
+#summarizing mean and creating month and year columns
+AirQualityDataJoined_processed <-
+  AirQualityDataJoined %>%
+  filter(Site.Name == "Linville Falls"|Site.Name == "Durham Armory"|
+           Site.Name == "Leggett"|Site.Name == "Hattie Avenue"|
+           Site.Name ==  "Clemmons Middle"|Site.Name == "Mendenhall School"| 
+           Site.Name =="Frying Pan Mountain"|Site.Name =="West Johnston Co."|
+           Site.Name == "Garinger High School" |Site.Name == "Castle Hayne"|
+           Site.Name =="Pitt Agri. Center" |Site.Name =="Bryson City"|
+           Site.Name == "Millbrook School") %>%
+  group_by(Date, Site.Name, AQS_PARAMETER_DESC, COUNTY)%>%
+  summarise(meanAQIvalue = mean(DAILY_AQI_VALUE),
+            meanLatitude = mean(SITE_LATITUDE),
+            meanLongitude = mean(SITE_LONGITUDE),
+            .groups = "drop") %>% #Ungrouping after summarizing to avoid error
+  mutate(month=month(Date), year=year(Date))
 
 
 #9
+#Spreading dataset such that AQI values for ozone and PM2.5 are in separate columns.
+#Each location on a specific date should now occupy only one row
+AirQualityDataJoined_processed_spread <- pivot_wider(AirQualityDataJoined_processed,names_from = AQS_PARAMETER_DESC,values_from = meanAQIvalue)
 
-
-#10
-
+#10 
+#Checking Dimensions of New Dataset
+dim(AirQualityDataJoined_processed_spread)
 
 #11
-
+#Saving New Processed File
+write.csv(AirQualityDataJoined_processed_spread, file = "/Users/aishwaryapatankar/Documents/Duke University/Spring2025/ENERGY872/EDA_Spring2025/Data/Processed/EPAair_O3_PM25_NC1819_Processed.csv",row.names = FALSE)
 
 ```
 
@@ -185,11 +211,16 @@ write.csv(PM2019filtered, file = "/Users/aishwaryapatankar/Documents/Duke Univer
 
 ```{r questions 12 and 13}
 
-#12
-
-
+#12 Creating Summary dataframe
+SummaryDf <- 
+  AirQualityDataJoined_processed_spread%>%
+  group_by(Site.Name, month, year)%>%
+  summarise(meanOzone = mean(Ozone),
+            meanPM = mean(PM2.5),
+            .groups = "drop")%>% #Ungrouping after summarizing to avoid error
+  drop_na(meanOzone)
 #13
-
+dim(SummaryDf)
 
 
 ```
@@ -197,4 +228,6 @@ write.csv(PM2019filtered, file = "/Users/aishwaryapatankar/Documents/Duke Univer
 14. Why did we use the function `drop_na` rather than `na.omit`? Hint: replace `drop_na` with `na.omit` in part 12 and observe what happens with the dimensions of the summary date frame.
 
 > Answer: 
-
+We use drop_na rather than na.omit because na.omit cause the removal of all 
+rows with NA values in them. In case of using na.omit we lose data of sites 
+where only Ozone values are available.
