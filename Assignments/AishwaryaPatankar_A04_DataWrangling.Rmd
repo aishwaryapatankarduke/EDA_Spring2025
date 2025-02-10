@@ -31,18 +31,46 @@ This exercise accompanies the lessons in Environmental Data Analytics on Data Wr
 
 ```{r setup, message = FALSE}
 #1a 
+#Installing the packages tidyverse, lubridate and here
+#install.packages("tidyverse") : Line is hashed out while knitting file
+#install.packages("lubridate")  Line is hashed out while knitting file
+#install.packages("here")  Line is hashed out while knitting file
+
+library(tidyverse)
+library(lubridate)
+library(here)
 
 #1b 
+#Checking the working directory
+getwd()
 
 #1c 
+Ozone2018 <- read.csv(
+  file = here("./Data/Raw/EPAair_O3_NC2018_raw.csv"),
+  stringsAsFactors = TRUE)
+
+Ozone2019 <- read.csv(
+  file = here("./Data/Raw/EPAair_O3_NC2019_raw.csv"),
+  stringsAsFactors = TRUE)
+
+PM2018 <- read.csv(
+  file = here("./Data/Raw/EPAair_PM25_NC2018_raw.csv"),
+  stringsAsFactors = TRUE)
+
+PM2019 <- read.csv(
+  file = here("./Data/Raw/EPAair_PM25_NC2019_raw.csv"),
+  stringsAsFactors = TRUE)
 
 #2 
-
+dim(Ozone2018)
+dim(Ozone2019)
+dim(PM2018)
+dim(PM2019)
 
 ```
 
 >All four datasets should have the same number of columns but unique record counts (rows). Do your datasets follow this pattern?
-
+Yes, we observe that all datasets have 20 columns but different number of rows. Ozone2018 has 9737 rows, Ozone2019 has 10592 rows, PM2018 has 8983 rows and PM2019 has 8581 rows.
 
 ## Wrangle individual datasets to create processed files.
 
@@ -56,15 +84,49 @@ This exercise accompanies the lessons in Environmental Data Analytics on Data Wr
 
 ```{r questions 3 thru 4}
 #3
+#Checking column names in all 4 datasheets
+colnames(Ozone2018)
+colnames(Ozone2019)
+colnames(PM2018)
+colnames(PM2019)
 
+#Using str to check the format in which the Date column is
+str(Ozone2018$Date)
+str(Ozone2019$Date)
+str(PM2018$Date)
+str(PM2019$Date)
 
-#4
+# Converting Date Column in the four datasheets into date object
+Ozone2018$Date <- as.Date(Ozone2018$Date, format = "%m/%d/%Y")
+Ozone2019$Date <- as.Date(Ozone2019$Date, format = "%m/%d/%Y")
+PM2018$Date <- as.Date(PM2018$Date, format = "%m/%d/%Y")
+PM2019$Date <- as.Date(PM2019$Date, format = "%m/%d/%Y")
 
+#Checking Conversion to Date Object
+class(Ozone2018$Date)
+class(Ozone2019$Date)
+class(PM2018$Date)
+class(PM2019$Date)
 
-#5
+#4 Selecting Columns
+Ozone2018filtered <- select(Ozone2018,Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
+Ozone2019filtered <- select(Ozone2019,Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
+PM2018filtered <- select(PM2018,Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
+PM2019filtered <- select(PM2019,Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
 
+#5 Making cells in the PM sheets column AQS_PARAMETER_DESC to "PM2.5 
+PM2018filtered$AQS_PARAMETER_DESC <- "PM2.5"
+PM2019filtered$AQS_PARAMETER_DESC <- "PM2.5"
 
 #6
+#Saving the four processed datasets
+write.csv(Ozone2018filtered, file = "/Users/aishwaryapatankar/Documents/Duke University/Spring2025/ENERGY872/EDA_Spring2025/Data/Processed/EPAair_O3_NC2018_processed.csv", row.names = FALSE)
+
+write.csv(Ozone2019filtered, file = "/Users/aishwaryapatankar/Documents/Duke University/Spring2025/ENERGY872/EDA_Spring2025/Data/Processed/EPAair_O3_NC2019_processed.csv", row.names = FALSE)
+
+write.csv(PM2018filtered, file = "/Users/aishwaryapatankar/Documents/Duke University/Spring2025/ENERGY872/EDA_Spring2025/Data/Processed/EPAair_PM25_NC2018_processed.csv", row.names = FALSE)
+
+write.csv(PM2019filtered, file = "/Users/aishwaryapatankar/Documents/Duke University/Spring2025/ENERGY872/EDA_Spring2025/Data/Processed/EPAair_PM25_NC2019_processed.csv", row.names = FALSE)
 
 ```
 
