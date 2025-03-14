@@ -30,10 +30,11 @@ This exercise accompanies the lessons in Environmental Data Analytics on general
 #Installing Packages
 library(tidyverse)
 library(lubridate)
-install.packages("trend")
+#install.packages("trend")
 library(trend)
-install.packages("zoo")
+#install.packages("zoo")
 library(zoo)
+library(here)
 
 #Checking the working directory
 getwd()
@@ -50,6 +51,53 @@ theme_set(mytheme)
 
 ```{r, message = FALSE}
 #2
+#Getting Datasets from Raw folder
+O3_Gar_2010 <- read.csv(
+  file = here("./Data/Raw/Ozone_TimeSeries/EPAair_O3_GaringerNC2010_raw.csv"),
+  stringsAsFactors = TRUE)
+
+O3_Gar_2011 <- read.csv(
+  file = here("./Data/Raw/Ozone_TimeSeries/EPAair_O3_GaringerNC2011_raw.csv"),
+  stringsAsFactors = TRUE)
+
+O3_Gar_2012 <- read.csv(
+  file = here("./Data/Raw/Ozone_TimeSeries/EPAair_O3_GaringerNC2012_raw.csv"),
+  stringsAsFactors = TRUE)
+
+O3_Gar_2013 <- read.csv(
+  file = here("./Data/Raw/Ozone_TimeSeries/EPAair_O3_GaringerNC2013_raw.csv"),
+  stringsAsFactors = TRUE)
+
+O3_Gar_2014 <- read.csv(
+  file = here("./Data/Raw/Ozone_TimeSeries/EPAair_O3_GaringerNC2014_raw.csv"),
+  stringsAsFactors = TRUE)
+
+O3_Gar_2015 <- read.csv(
+  file = here("./Data/Raw/Ozone_TimeSeries/EPAair_O3_GaringerNC2015_raw.csv"),
+  stringsAsFactors = TRUE)
+
+O3_Gar_2016 <- read.csv(
+  file = here("./Data/Raw/Ozone_TimeSeries/EPAair_O3_GaringerNC2016_raw.csv"),
+  stringsAsFactors = TRUE)
+
+O3_Gar_2017 <- read.csv(
+  file = here("./Data/Raw/Ozone_TimeSeries/EPAair_O3_GaringerNC2017_raw.csv"),
+  stringsAsFactors = TRUE)
+
+O3_Gar_2018 <- read.csv(
+  file = here("./Data/Raw/Ozone_TimeSeries/EPAair_O3_GaringerNC2018_raw.csv"),
+  stringsAsFactors = TRUE)
+
+O3_Gar_2019 <- read.csv(
+  file = here("./Data/Raw/Ozone_TimeSeries/EPAair_O3_GaringerNC2019_raw.csv"),
+  stringsAsFactors = TRUE)
+
+#Combining into Single Dataframe
+OzoneDataList <- list(O3_Gar_2010,O3_Gar_2011, O3_Gar_2012, O3_Gar_2013, O3_Gar_2014, O3_Gar_2015, O3_Gar_2016, O3_Gar_2017, O3_Gar_2018, O3_Gar_2019)
+
+GaringerOzone <- bind_rows(OzoneDataList)
+
+  
 
 ```
 
@@ -65,13 +113,25 @@ theme_set(mytheme)
 
 ```{r}
 # 3
+#Checking class of Date column
+class(GaringerOzone$Date)
+
+GaringerOzone$Date<- as.Date(GaringerOzone$Date, format = "%m/%d/%Y")
+
+class(GaringerOzone$Date)
 
 # 4
+#Subsetting
+GaringerOzone_subset <- GaringerOzone %>%
+  select(Date, Daily.Max.8.hour.Ozone.Concentration, DAILY_AQI_VALUE)
 
 # 5
+Days <- as.data.frame(seq(from = as.Date("2010-01-01"), to = as.Date("2019-12-31"), by="day"))
+
+colnames(Days) <- "Date"
 
 # 6
-
+GaringerOzoneNew <-left_join(Days, GaringerOzone_subset, by = "Date")
 
 ```
 
@@ -81,10 +141,16 @@ theme_set(mytheme)
 
 ```{r}
 #7
+Ozone_v_Date<- 
+  ggplot(GaringerOzoneNew, aes(x = Date, y = Daily.Max.8.hour.Ozone.Concentration))+
+  geom_line()+
+  geom_smooth(method = "lm")+
+  mytheme
+  print(Ozone_v_Date)
 
 ```
 
->Answer:
+>Answer: Yes our plot indicates that there is seasonality to the Ozone Concentrations. Ozone concentrations are lowest in the winter season and peak during summers year on year. Also progressively over the years the concentrations have decreased.
 
 ## Time Series Analysis
 
@@ -94,16 +160,25 @@ Study question: Have ozone concentrations changed over the 2010s at this station
 
 ```{r}
 #8
-
+#Interpolating values for the NA in Ozone Column and Updating the column with interpolated values.
+GaringerOzoneNew$Daily.Max.8.hour.Ozone.Concentration <- na.approx(GaringerOzoneNew$Daily.Max.8.hour.Ozone.Concentration)
 ```
 
 > Answer: 
-
+Linear interpolation is a simple method which allows use of linear polynomials to fit data. Spline is used for smoother fits and piecewise contains differenr functions over different intervals. As ozone concentartions are not expected to show drastic differences between consecutive days, the linear interpolation is a good simple method to show a stepwise increase or decrease in accordance with the data of the previous and next day.
 
 9. Create a new data frame called `GaringerOzone.monthly` that contains aggregated data: mean ozone concentrations for each month. In your pipe, you will need to first add columns for year and month to form the groupings. In a separate line of code, create a new Date column with each month-year combination being set as the first day of the month (this is for graphing purposes only)
 
 ```{r}
 #9
+GaringerOzone.monthly <- GaringerOzoneNew %>%
+  mutate(Year = year(Date), Month = month(Date))%>%
+  group_by(Month,Year)%>%
+  summarise(MeanOzone = mean(Daily.Max.8.hour.Ozone.Concentration))%>%
+  ungroup()%>%
+  mutate(Date = as.Date(paste(Year,Month, "01", sep = "-" ))
+  )
+  
 
 ```
 
@@ -112,6 +187,10 @@ Study question: Have ozone concentrations changed over the 2010s at this station
 
 ```{r}
 #10
+#Creating Daily and Monthly Time Series Objects
+GaringerOzone.daily.ts <- ts(GaringerOzoneNew$Daily.Max.8.hour.Ozone.Concentration, frequency = 365, start = c(2010,1))
+
+GaringerOzone.monthly.ts <- ts(GaringerOzone.monthly$MeanOzone,frequency = 12,start=c(2010,1))
 
 ```
 
@@ -120,7 +199,11 @@ Study question: Have ozone concentrations changed over the 2010s at this station
 
 ```{r}
 #11
+GaringerOzone.daily.ts_Decomposed <- stl(GaringerOzone.daily.ts, s.window = "periodic")
+plot(GaringerOzone.daily.ts_Decomposed)
 
+GaringerOzone.monthly.ts_Decomposed <- stl(GaringerOzone.monthly.ts, s.window = "periodic")
+plot(GaringerOzone.monthly.ts_Decomposed)
 
 ```
 
@@ -130,18 +213,25 @@ Study question: Have ozone concentrations changed over the 2010s at this station
 ```{r}
 #12
 
-
+MonthlyOzone_trend <- trend::smk.test(GaringerOzone.monthly.ts)
+# Inspect results
+MonthlyOzone_trend
 
 ```
 
-> Answer: 
+> Answer: The Mann-Kendall test is used for to study deterministic observations in environmental data. The Mann-Kendall test cannot be applied to seasonal data but a modified version of this test known as sesonal Mann-Kendall can be used to study seasonality.
 
 13. Create a plot depicting mean monthly ozone concentrations over time, with both a geom_point and a geom_line layer. Edit your axis labels accordingly.
 
 ```{r}
 # 13
 
-
+MeanO3_v_Date<- 
+  ggplot(GaringerOzone.monthly, aes(x = Date, y = MeanOzone))+
+  geom_line()+
+  geom_point()+
+  mytheme
+  print(MeanO3_v_Date)
 
 
 ```
@@ -149,6 +239,7 @@ Study question: Have ozone concentrations changed over the 2010s at this station
 14. To accompany your graph, summarize your results in context of the research question. Include output from the statistical test in parentheses at the end of your sentence. Feel free to use multiple sentences in your interpretation.
 
 > Answer: 
+Our MeanOzone Vs Date graph shows us O3 concentration trend with a seasonal component. The seasonal Mann-Kendall test shows that the S value is -54 indicating a downward monotonic trend, meaning that the ozone concentrations are decreasing over the 2010s at this station. However, the p value is 0.1712 which is greater than 0.05 indicating that our results are not statistically significant so we cannot reject Null Hypothesis that there is no monotonic trend. 
 
 15. Subtract the seasonal component from the `GaringerOzone.monthly.ts`. Hint: Look at how we extracted the series components for the EnoDischarge on the lesson Rmd file.
 
@@ -156,14 +247,22 @@ Study question: Have ozone concentrations changed over the 2010s at this station
 
 ```{r}
 #15
+#Extracting Component of teh series and turning it into a dataframe
+GaringerOzone.monthly_Components <- as.data.frame(GaringerOzone.monthly.ts_Decomposed$time.series[,1:3])
+#Removing seasonality for Ozone
+MeanOzone_Nonseas <- GaringerOzone.monthly.ts - GaringerOzone.monthly.ts_Decomposed$time.series[,1]
+GaringerOzone.monthly_Components <- mutate(GaringerOzone.monthly_Components,
+Nonseasonal = MeanOzone_Nonseas)
 
 
 
 #16
-
+MeanOzone_Nonseas_trend <- trend::mk.test(MeanOzone_Nonseas)
+# Inspect results
+MeanOzone_Nonseas_trend
 
 
 
 ```
 
-> Answer: 
+> Answer: In the Mann kendall test with non-seasonal component we observe that the S values is -718 indicating a downward monotonic trend, meaning that the ozone concentrations are decreasing over the 2010s at this station. However, the p value is 0.1039 which is greater than 0.05 indicating that our results are not statistically significant so we cannot reject Null Hypothesis that there is no monotonic trend.
