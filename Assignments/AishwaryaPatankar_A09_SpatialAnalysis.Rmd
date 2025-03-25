@@ -265,15 +265,15 @@ GageinBuffer <- GageLocation.sf_utm%>%
   st_filter(CountyBuffer, .predicate = st_within)
 
 #25 Plot
+
 myMap = mapview(Counties_sf_utm_Saunders,
                 col.regions = "yellow",
-                alpha.regions = 0.2,
+                alpha.regions = 1,
                 map.types ="CartoDB.Positron",
                 legend = FALSE)
-myMapGageinBuffer <- mapview(GageinBuffer, color="blue", alpha.regions=0, legend = TRUE)
+myMapGageinBuffer <- mapview(GageinBuffer, col.regions="blue",color="blue", alpha.regions=0.5, legend = TRUE)
 
-myMapGageinSaunders <- mapview(Saunders_intersect, color="red", alpha.regions=0, legend = TRUE)
-myMap + myMapGageinBuffer + myMapGageinSaunders 
-  
+myMapGageinSaunders <- mapview(Saunders_intersect, col.regions="red",color="red", alpha.regions=0.5, legend = TRUE)
+myMap_Counties+myMap + myMapGageinBuffer + myMapGageinSaunders
 
 ```
