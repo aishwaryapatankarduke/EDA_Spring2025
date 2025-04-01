@@ -28,6 +28,12 @@ This exercise accompanies the lessons in Environmental Data Analytics on data sc
 ```{r 1. Project Setup, message = FALSE}
 #1 
 
+library(tidyverse)
+library(lubridate)
+library(here); here()
+
+#install.packages("rvest")
+library(rvest)
 
 ```
 
@@ -40,7 +46,7 @@ Indicate this website as the as the URL to be scraped. (In other words, read the
 
 ```{r set.the.scraping.website}
 #2 
-
+theURL <- read_html("https://www.ncwater.org/WUDC/app/LWSP/report.php?pwsid=03-32-010&year=2024")
 ```
 
 3. The data we want to collect are listed below:
@@ -59,6 +65,31 @@ In the code chunk below scrape these values, assigning them to four separate var
 
 ```{r scrape.the.data}
 #3 
+max_withdrawals <- theURL %>%
+  html_nodes("th~ td+ td")%>%
+  html_text()
+max_withdrawals
+  
+the_municipality <- theURL %>%
+  html_nodes("div+ table tr:nth-child(2) td:nth-child(4)")%>%
+  html_text()
+the_municipality
+
+the_PWSID <- theURL %>%
+  html_nodes("td tr:nth-child(1) td:nth-child(5)")%>%
+  html_text()
+the_PWSID
+
+the_WaterSystemName <- theURL %>%
+  html_nodes("div+ table tr:nth-child(1) td:nth-child(2)")%>%
+  html_text()
+the_WaterSystemName
+
+
+the_Month <- theURL %>%
+  html_nodes(".fancy-table:nth-child(30) tr+ tr th")%>%
+  html_text()
+the_Month
 
 
 ```
@@ -74,9 +105,31 @@ In the code chunk below scrape these values, assigning them to four separate var
 
 ```{r create.a.dataframe.from.scraped.data}
 #4 
+df_withdrawals <- data.frame( "Year" = rep(2024,12),
+                             "Max_withdrawals_mgd" = as.numeric(max_withdrawals))
 
+month_order <- c("Jan","May","Sep","Feb","Jun","Oct","Mar","Jul","Nov","Apr","Aug","Dec")
+month_to_number <- c("Jan"="01","May"="05","Sep"="09","Feb"="02","Jun"="06","Oct"="10","Mar"="03","Jul"="07","Nov"="11","Apr"="04","Aug"="08","Dec"="12")
+  
+#Modifying the Dataframe to include Water System Owner name, PWSID and Ownership
+df_withdrawals <- df_withdrawals %>%
+  mutate(WaterSystemName = !!the_WaterSystemName,
+         PWSID = !!the_PWSID,
+         Municipality = !!the_municipality,
+         Month = month_order,
+         Date = as.Date(paste(df_withdrawals$Year,month_to_number[Month], "01", sep ="-")))
+
+df_withdrawals_arranged <- df_withdrawals %>%
+  arrange(Date)%>%
+  mutate(Month_new = month(Date))%>%
+  mutate(Month_new = factor(Month_new, levels = 1:12, labels = c("Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec")))
 
 #5 
+Plot_MaxDailyWithdrawals <-
+  ggplot(df_withdrawals_arranged, aes(x=Month_new, y=Max_withdrawals_mgd))+
+  geom_line(group = 1)+
+  labs(title = "2024 Maximum Daily Withdrawals", x = "Months", y ="Max Daily Withdrawals (mgd)")
+  print(Plot_MaxDailyWithdrawals)
 
 
 ```
@@ -90,14 +143,57 @@ In the code chunk below scrape these values, assigning them to four separate var
 
 ```{r construct.a.scraping.function}
 #6. 
+#Constructing the scraping URL
+the_BaseURL <- 'https://www.ncwater.org/WUDC/app/LWSP/report.php?'
+Q6the_PWSID <- '03-32-010'
+the_year <- 2020
+the_scrape_url <- paste0(the_BaseURL,'pwsid=',Q6the_PWSID,'&year=',the_year)
+print(the_scrape_url)
 
+# Retrieving website contents
+the_website <- read_html(the_scrape_url)
 
+#Set the element address variables 
+
+max_withdrawals_tag <- 'th~ td+ td'
+the_municipality_tag <-'div+ table tr:nth-child(2) td:nth-child(4)'
+the_PWSID_tag <- 'td tr:nth-child(1) td:nth-child(5)'
+the_WaterSystemName_tag <- 'div+ table tr:nth-child(1) td:nth-child(2)'
+
+#Scraping the data items
+max_withdrawals_data <- the_website %>% html_nodes(max_withdrawals_tag) %>%html_text()
+the_municipality_data <- the_website %>% html_nodes(the_municipality_tag) %>%html_text()
+the_PWSID_data <- the_website %>% html_nodes(the_PWSID_tag) %>%html_text()
+the_WaterSystemName_data <- the_website %>% html_nodes(the_WaterSystemName_tag) %>%html_text()
+
+#Converting to a dataframe
+df_withdrawals2 <- data.frame( "Year" = rep(the_year,12),
+                             "Max_withdrawals_mgd" = as.numeric(max_withdrawals_data))
+
+#Modifying the Dataframe to include Water System Owner name, PWSID and Ownership
+df_withdrawals2 <- df_withdrawals2 %>%
+  mutate(WaterSystemName = !!the_WaterSystemName_data,
+         PWSID = !!the_PWSID_data,
+         Municipality = !!the_municipality_data,
+         Month = month_order,
+         Date = as.Date(paste(df_withdrawals$Year,month_to_number[Month], "01", sep ="-")))
+
+df_withdrawals_arranged2 <- df_withdrawals2 %>%
+  arrange(Date)%>%
+  mutate(Month_new = month(Date))%>%
+  mutate(Month_new = factor(Month_new, levels = 1:12, labels = c("Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec")))
+return(df_withdrawals_arranged2)
 ```
 
 7. Use the function above to extract and plot max daily withdrawals for Durham (PWSID='03-32-010') for each month in 2020
 
 ```{r fetch.and.plot.Durham.2020.data}
 #7 
+Plot_MaxDailyWithdrawals2 <-
+  ggplot(df_withdrawals_arranged2, aes(x=Month_new, y=Max_withdrawals_mgd))+
+  geom_line(group = 1)+
+  labs(title = paste(the_year, "Maximum Daily Withdrawals", the_WaterSystemName_data), subtitle = paste(the_PWSID), x = "Months", y ="Max Daily Withdrawals (mgd)")
+  print(Plot_MaxDailyWithdrawals2)
 
 
 ```
@@ -107,7 +203,63 @@ In the code chunk below scrape these values, assigning them to four separate var
 ```{r fetch.and.plot.Asheville.2020.data}
 #8 
 
+#Creating a Scraping function
+scrape.it <- function(the_year,Q6the_PWSID){
+  #Constructing the scraping URL
+the_BaseURL <-  'https://www.ncwater.org/WUDC/app/LWSP/report.php?'
+the_scrape_url <- paste0(the_BaseURL,'pwsid=',Q6the_PWSID,'&year=',the_year)
 
+# Retrieving website contents
+the_website <- read_html(the_scrape_url)
+
+#Set the element address variables 
+
+max_withdrawals_tag <- 'th~ td+ td'
+the_municipality_tag <-'div+ table tr:nth-child(2) td:nth-child(4)'
+the_PWSID_tag <- 'td tr:nth-child(1) td:nth-child(5)'
+the_WaterSystemName_tag <- 'div+ table tr:nth-child(1) td:nth-child(2)'
+
+#Scraping the data items
+max_withdrawals_data <- the_website %>% html_nodes(max_withdrawals_tag) %>%html_text()
+the_municipality_data <- the_website %>% html_nodes(the_municipality_tag) %>%html_text()
+the_PWSID_data <- the_website %>% html_nodes(the_PWSID_tag) %>%html_text()
+the_WaterSystemName_data <- the_website %>% html_nodes(the_WaterSystemName_tag) %>%html_text()
+
+#Converting to a dataframe
+df_withdrawals2 <- data.frame( "Year" = rep(the_year,12),
+                             "Max_withdrawals_mgd" = as.numeric(max_withdrawals_data))
+
+#Modifying the Dataframe to include Water System Owner name, PWSID and Ownership
+df_withdrawals2 <- df_withdrawals2 %>%
+  mutate(WaterSystemName = !!the_WaterSystemName_data,
+         PWSID = !!the_PWSID_data,
+         Municipality = !!the_municipality_data,
+         Month = month_order,
+         Date = as.Date(paste(df_withdrawals$Year,month_to_number[Month], "01", sep ="-")))
+
+df_withdrawals_arranged2 <- df_withdrawals2 %>%
+  arrange(Date)%>%
+  mutate(Month_new = month(Date))%>%
+  mutate(Month_new = factor(Month_new, levels = 1:12, labels = c("Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec")))
+
+return(df_withdrawals_arranged2)
+}
+
+Ashville_2020 <- scrape.it(2020,'01-11-010')
+
+Dfs2020 <- bind_rows(df_withdrawals_arranged2,Ashville_2020)
+
+Dfs2020 <- Dfs2020 %>% arrange(Month_new)
+
+Plot_2020 <-
+  ggplot(Dfs2020, aes(x=Month_new, y=Max_withdrawals_mgd, color = WaterSystemName, group = WaterSystemName))+
+  geom_line()+
+  geom_point()+
+  labs(title = paste(the_year, "Maximum Daily Withdrawals"), x = "Months", y ="Max Daily Withdrawals (mgd)")
+  print(Plot_2020)
+
+
+  
 ```
 
 
@@ -117,10 +269,22 @@ In the code chunk below scrape these values, assigning them to four separate var
 
 ```{r fetch.and.plot.Asheville.multiyear.data }
 #9 
+the_years = rep(2018:2023)
+myfacility = '01-11-010'
 
+the_dfs <- map(the_years, scrape.it, Q6the_PWSID =myfacility)
+
+the_df <- bind_rows(the_dfs)
+
+#Plotting
+Ashville_Plot<-
+ggplot(the_df, aes(x = Month_new, y=Max_withdrawals_mgd, color=Year, group=Year))+
+  geom_smooth(method="loess",se=FALSE)+
+  labs(title = paste("2018 - 2023 Maximum Withdrawals MGD"), subtitle = myfacility, x="Month", y="Maximum Withdrawal (mgd)")
+print(Ashville_Plot)
 
 ```
 
 Question: Just by looking at the plot (i.e. not running statistics), does Asheville have a trend in water usage over time?
 > Answer:
->
+> Yes, by looking at the plot we see that in summer months typically from May to August the water demand is high. The demand reduces in the winter months and some dips in demand are also observed in Spring. Some outliers are also observed i.e a high water demand is observed in the winter of 2022 and beginning of 2023. 
